@@ -25,7 +25,7 @@ type BuildProcess interface {
 
 func Build(buildProcess BuildProcess, logs scribe.Emitter, clock chronos.Clock, sbomGenerator SBOMGenerator) packit.BuildFunc {
 	return func(context packit.BuildContext) (packit.BuildResult, error) {
-		logs.Title("%s %s", context.BuildpackInfo.Name, context.BuildpackInfo.Version)
+		logs.Title("%s %s - test bwagner!!", context.BuildpackInfo.Name, context.BuildpackInfo.Version)
 
 		ok, reason, err := buildProcess.ShouldRun(context.WorkingDir)
 		if err != nil {
