@@ -47,10 +47,10 @@ func (m ModVendor) Execute(buildConfiguration BuildConfiguration, path, workingD
 	args := []string{"mod", "vendor"}
 
 	m.logs.Process("Executing build process")
-	m.logs.Subprocess("Running 'go %s'", strings.Join(args, " "))
 
 	env := m.configEnv(buildConfiguration, workingDir)
 	m.logs.Subprocess("Env='%s'", strings.Join(env, ","))
+	m.logs.Subprocess("Running 'go %s'", strings.Join(args, " "))
 
 	duration, err := m.clock.Measure(func() error {
 		return m.executable.Execute(pexec.Execution{
