@@ -20,12 +20,12 @@ type SBOMGenerator interface {
 //go:generate faux --interface BuildProcess --output fakes/build_process.go
 type BuildProcess interface {
 	ShouldRun(workingDir string) (ok bool, reason string, err error)
-	Execute(path, workingDir string) error
+	Execute(buildConfiguration BuildConfiguration, path, workingDir string) error
 }
 
 func Build(buildProcess BuildProcess, logs scribe.Emitter, clock chronos.Clock, sbomGenerator SBOMGenerator) packit.BuildFunc {
 	return func(context packit.BuildContext) (packit.BuildResult, error) {
-		logs.Title("%s %s - test bwagner!!", context.BuildpackInfo.Name, context.BuildpackInfo.Version)
+		logs.Title("%s %s", context.BuildpackInfo.Name, context.BuildpackInfo.Version)
 
 		ok, reason, err := buildProcess.ShouldRun(context.WorkingDir)
 		if err != nil {
@@ -46,7 +46,12 @@ func Build(buildProcess BuildProcess, logs scribe.Emitter, clock chronos.Clock, 
 
 		modCacheLayer.Cache = true
 
-		err = buildProcess.Execute(modCacheLayer.Path, context.WorkingDir)
+		buildConfiguration, err := NewBuildConfigurationParser().Parse()
+		if err != nil {
+			return packit.BuildResult{}, err
+		}
+
+		err = buildProcess.Execute(buildConfiguration, modCacheLayer.Path, context.WorkingDir)
 		if err != nil {
 			return packit.BuildResult{}, err
 		}

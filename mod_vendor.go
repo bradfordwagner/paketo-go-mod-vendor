@@ -2,7 +2,6 @@ package gomodvendor
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -44,16 +43,19 @@ func (m ModVendor) ShouldRun(workingDir string) (bool, string, error) {
 	return true, "", nil
 }
 
-func (m ModVendor) Execute(path, workingDir string) error {
+func (m ModVendor) Execute(buildConfiguration BuildConfiguration, path, workingDir string) error {
 	args := []string{"mod", "vendor"}
 
 	m.logs.Process("Executing build process")
 	m.logs.Subprocess("Running 'go %s'", strings.Join(args, " "))
 
+	env := m.configEnv(buildConfiguration, workingDir)
+	m.logs.Subprocess("Env='%s'", strings.Join(env, ","))
+
 	duration, err := m.clock.Measure(func() error {
 		return m.executable.Execute(pexec.Execution{
 			Args:   args,
-			Env:    append(os.Environ(), fmt.Sprintf("GOMODCACHE=%s", path)),
+			Env:    env,
 			Dir:    workingDir,
 			Stdout: m.logs.ActionWriter,
 			Stderr: m.logs.ActionWriter,
@@ -68,4 +70,29 @@ func (m ModVendor) Execute(path, workingDir string) error {
 	m.logs.Break()
 
 	return nil
+}
+
+func (m ModVendor) configEnv(buildConfiguration BuildConfiguration, path string) (env []string) {
+	env = append(env, fmt.Sprintf("GOMODCACHE=%s", path))
+	if buildConfiguration.GoProxy != "" {
+		env = append(env, fmt.Sprintf("GOPROXY=%s", buildConfiguration.GoProxy))
+		m.logs.Subprocess(fmt.Sprintf("GOPROXY=%s", buildConfiguration.GoProxy))
+	}
+	if buildConfiguration.GoNoProxy != "" {
+		env = append(env, fmt.Sprintf("GONOPROXY=%s", buildConfiguration.GoNoProxy))
+		m.logs.Subprocess(fmt.Sprintf("GONOPROXY=%s", buildConfiguration.GoNoProxy))
+	}
+	if buildConfiguration.GoSumDB != "" {
+		env = append(env, fmt.Sprintf("GOSUMDB=%s", buildConfiguration.GoSumDB))
+		m.logs.Subprocess(fmt.Sprintf("GOSUMDB=%s", buildConfiguration.GoSumDB))
+	}
+	if buildConfiguration.GoNoSumDB != "" {
+		env = append(env, fmt.Sprintf("GONOSUMDB=%s", buildConfiguration.GoNoSumDB))
+		m.logs.Subprocess(fmt.Sprintf("GONOSUMDB=%s", buildConfiguration.GoNoSumDB))
+	}
+	if buildConfiguration.GoPrivate != "" {
+		env = append(env, fmt.Sprintf("GOPRIVATE=%s", buildConfiguration.GoPrivate))
+		m.logs.Subprocess(fmt.Sprintf("GOPRIVATE=%s", buildConfiguration.GoPrivate))
+	}
+	return
 }
